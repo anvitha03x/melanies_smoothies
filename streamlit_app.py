@@ -46,7 +46,9 @@ if ingredients_list:
 )
 
         st.write("🍉 SmoothieFroot Nutrition Info")
-        st.write(smoothiefroot_response.json())
+        #st.write(smoothiefroot_response.json())
+
+        sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     except Exception as e:
         st.error(f"API error: {e}")
