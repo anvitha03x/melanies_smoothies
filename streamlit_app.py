@@ -27,7 +27,7 @@ fruit_list = [row["FRUIT_NAME"] for row in fruit_df.collect()]
 # Multiselect
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_list,
+    pd_df["FRUIT_NAME"].tolist(),
     max_selections=5
 )
 
@@ -35,25 +35,51 @@ ingredients_list = st.multiselect(
 # NEW SECTION: API CALL
 # -------------------------
 import urllib.parse
+my_dataframe = session.table("smoothies.public.fruit_options").select(
+    col("FRUIT_NAME"),
+    col("SEARCH_ON")
+)
+
+pd_df = my_dataframe.to_pandas()
 
 if ingredients_list:
 
-    selected_fruit = urllib.parse.quote(ingredients_list[0])
+    ingredients_string = " ".join(ingredients_list)
 
-    try:
+    for fruit_chosen in ingredients_list:
+
+        # Find the API search value
+        search_on = pd_df.loc[
+            pd_df["FRUIT_NAME"] == fruit_chosen,
+            "SEARCH_ON"
+        ].iloc[0]
+
+        st.write(
+            f"The search value for {fruit_chosen} is {search_on}."
+        )
+
+        st.subheader(f"{fruit_chosen} Nutrition Information")
+
         smoothiefroot_response = requests.get(
-    f"https://my.smoothiefroot.com/api/fruit/{selected_fruit}"
-)
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
+        )
 
-        st.write("🍉 SmoothieFroot Nutrition Info")
-        #st.write(smoothiefroot_response.json())
+        st.dataframe(
+            data=smoothiefroot_response.json(),
+            use_container_width=True
+        )
 
-        sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
+    # Insert order into Snowflake
+    my_insert_stmt = f"""
+    INSERT INTO smoothies.public.orders
+    (ingredients, name_on_order)
+    VALUES
+    ('{ingredients_string}', '{name_on_order}')
+    """
 
-    except Exception as e:
-        st.error(f"API error: {e}")
-
-# -------------------------
+    if st.button("Submit Order"):
+        session.sql(my_insert_stmt).collect()
+        st.success("✅ Your Smoothie is ordered!")# -------------------------
 # INSERT ORDER INTO SNOWFLAKE
 # -------------------------
 import requests
