@@ -60,32 +60,28 @@ import requests
 
 if ingredients_list:
 
-    ingredients_string = ""
+    ingredients_string = " ".join(ingredients_list)
 
+    # Show nutrition information
     for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen + " "
-
         st.subheader(f"{fruit_chosen} Nutrition Information")
 
         smoothiefroot_response = requests.get(
             "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
         )
 
-        if smoothiefroot_response.status_code == 200:
-            st.dataframe(
-                data=smoothiefroot_response.json(),
-                use_container_width=True
-            )
-        else:
-            st.error(f"Could not retrieve information for {fruit_chosen}")    # Optional: Show SQL for debugging
+        st.write(smoothiefroot_response.json())
+
+    # Build SQL AFTER ingredients_string exists
+    my_insert_stmt = f"""
+    INSERT INTO smoothies.public.orders
+    (ingredients, name_on_order)
+    VALUES
+    ('{ingredients_string}', '{name_on_order}')
+    """
+
     st.code(my_insert_stmt, language="sql")
 
-    # Submit button
     if st.button("Submit Order"):
-
         session.sql(my_insert_stmt).collect()
-
-        st.success("✅ Your Smoothie is ordered!")
-
-        st.write(f"**Name:** {name_on_order}")
-        st.write(f"**Ingredients:** {ingredients_string}")
+        st.success("Your Smoothie is ordered! ✅")
