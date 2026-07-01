@@ -31,12 +31,10 @@ if ingredients_list:
 
     ingredients_string = " ".join(ingredients_list)
 
-    my_insert_stmt = f"""
-    INSERT INTO smoothies.public.orders
-    (ingredients, name_on_order)
-    VALUES
-    ('{ingredients_string}', '{name_on_order}')
-    """
+    my_insert_stmt = session.table("smoothies.public.orders").insert({
+    "ingredients": ingredients_string,
+    "name_on_order": name_on_order
+})
 
     # Optional: Show SQL for debugging
     st.code(my_insert_stmt, language="sql")
