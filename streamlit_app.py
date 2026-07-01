@@ -42,23 +42,22 @@ if st.button("Submit Order"):
 
     if not name_on_order:
         st.error("Please enter your name 😊")
+
     elif not ingredients_list:
-        st.error("Please select at least one fruit 🍎")
+        st.error("Please select fruits 🍓")
+
     else:
 
         ingredients_string = ", ".join(ingredients_list)
 
-        # Safe insert using Snowpark DataFrame API (no SQL injection risk)
-        order_df = session.create_dataframe(
-            [[ingredients_string, name_on_order]],
-            schema=["INGREDIENTS", "NAME_ON_ORDER"]
-        )
+        try:
+            session.sql(f"""
+                INSERT INTO smoothies.public.orders (ingredients, name_on_order)
+                VALUES ('{ingredients_string}', '{name_on_order}')
+            """).collect()
 
-        order_df.write.mode("append").save_as_table("smoothies.public.orders")
+            st.success("Order placed successfully 🎉")
 
-        # Success message
-        st.success("Your smoothie order has been placed! 🎉")
-
-        st.write("### Order Summary")
-        st.write(f"**Name:** {name_on_order}")
-        st.write(f"**Ingredients:** {ingredients_string}")
+        except Exception as e:
+            st.error("Something went wrong while saving your order.")
+            st.write("Check Snowflake table + permissions.")
