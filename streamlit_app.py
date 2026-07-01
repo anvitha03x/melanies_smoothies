@@ -1,50 +1,64 @@
-# Import python packages
 import streamlit as st
+from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
 
+# -------------------------
 # Title
-st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
+# -------------------------
+st.title("🥤 Customize Your Smoothie! 🥤")
+st.write("Pick your favorite fruits and build your smoothie 🍓🍌🍍")
 
-st.write("Choose the fruits you want in your custom Smoothie!")
-
-# Name input
+# -------------------------
+# Customer name input
+# -------------------------
 name_on_order = st.text_input("Name on Smoothie:")
 
-# Get Snowflake session
-cnx= st.connection("snowflake")
-session = cnx.session()
+# -------------------------
+# Snowflake connection (SAFE via secrets)
+# -------------------------
+conn_params = st.secrets["snowflake"]
 
-# Get fruit names
+session = Session.builder.configs(conn_params).create()
+
+# -------------------------
+# Fetch fruit list from Snowflake
+# -------------------------
 fruit_df = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
-
-# Convert Snowpark DataFrame to Python list
 fruit_list = [row["FRUIT_NAME"] for row in fruit_df.collect()]
 
-# Multiselect
+# -------------------------
+# Multi-select fruits (max 5)
+# -------------------------
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
     fruit_list,
     max_selections=5
 )
 
-if ingredients_list:
+# -------------------------
+# Submit order
+# -------------------------
+if st.button("Submit Order"):
 
-    ingredients_string = " ".join(ingredients_list)
+    if not name_on_order:
+        st.error("Please enter your name 😊")
+    elif not ingredients_list:
+        st.error("Please select at least one fruit 🍎")
+    else:
 
-    my_insert_stmt = session.table("smoothies.public.orders").insert({
-    "ingredients": ingredients_string,
-    "name_on_order": name_on_order
-})
+        ingredients_string = ", ".join(ingredients_list)
 
-    # Optional: Show SQL for debugging
-    st.code(my_insert_stmt, language="sql")
+        # Safe insert using Snowpark DataFrame API (no SQL injection risk)
+        order_df = session.create_dataframe(
+            [[ingredients_string, name_on_order]],
+            schema=["INGREDIENTS", "NAME_ON_ORDER"]
+        )
 
-    # Submit button
-    if st.button("Submit Order"):
+        order_df.write.mode("append").save_as_table("smoothies.public.orders")
 
-        session.sql(my_insert_stmt).collect()
+        # Success message
+        st.success("Your smoothie order has been placed! 🎉")
 
-        st.success("✅ Your Smoothie is ordered!")
-
+        st.write("### Order Summary")
         st.write(f"**Name:** {name_on_order}")
         st.write(f"**Ingredients:** {ingredients_string}")
