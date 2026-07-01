@@ -13,10 +13,7 @@ st.write("Choose the fruits you want in your custom Smoothie!")
 name_on_order = st.text_input("Name on Smoothie:")
 
 # Get Snowflake session
-from snowflake.snowpark import Session
-
-conn_params = st.secrets["snowflake"]
-session = Session.builder.configs(conn_params).create()
+session = get_active_session()
 
 # Get fruit names
 fruit_df = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
@@ -34,17 +31,19 @@ ingredients_list = st.multiselect(
 # -------------------------
 # NEW SECTION: API CALL
 # -------------------------
+import urllib.parse
+
 if ingredients_list:
 
-    selected_fruit = ingredients_list[0]
+    selected_fruit = urllib.parse.quote(ingredients_list[0])
 
     try:
         smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{selected_fruit}"
-        )
+    f"https://my.smoothiefroot.com/api/fruit/{selected_fruit}"
+)
 
         st.write("🍉 SmoothieFroot Nutrition Info")
-        st.text(smoothiefroot_response.json())
+        st.write(smoothiefroot_response.json())
 
     except Exception as e:
         st.error(f"API error: {e}")
