@@ -13,7 +13,10 @@ st.write("Choose the fruits you want in your custom Smoothie!")
 name_on_order = st.text_input("Name on Smoothie:")
 
 # Get Snowflake session
-session = get_active_session()
+from snowflake.snowpark import Session
+
+conn_params = st.secrets["snowflake"]
+session = Session.builder.configs(conn_params).create()
 
 # Get fruit names
 fruit_df = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
