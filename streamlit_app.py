@@ -61,3 +61,7 @@ if st.button("Submit Order"):
         except Exception as e:
             st.error("Something went wrong while saving your order.")
             st.write("Check Snowflake table + permissions.")
+
+import requests  
+smoothiefroot_response = requests.get("[https://my.smoothiefroot.com/api/fruit/watermelon](https://my.smoothiefroot.com/api/fruit/watermelon)")  
+st.text(smoothiefroot_response)
