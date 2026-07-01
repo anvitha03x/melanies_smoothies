@@ -56,18 +56,28 @@ if ingredients_list:
 # -------------------------
 # INSERT ORDER INTO SNOWFLAKE
 # -------------------------
+import requests
+
 if ingredients_list:
 
-    ingredients_string = " ".join(ingredients_list)
+    ingredients_string = ""
 
-    my_insert_stmt = f"""
-    INSERT INTO smoothies.public.orders
-    (ingredients, name_on_order)
-    VALUES
-    ('{ingredients_string}', '{name_on_order}')
-    """
+    for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + " "
 
-    # Optional: Show SQL for debugging
+        st.subheader(f"{fruit_chosen} Nutrition Information")
+
+        smoothiefroot_response = requests.get(
+            "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
+        )
+
+        if smoothiefroot_response.status_code == 200:
+            st.dataframe(
+                data=smoothiefroot_response.json(),
+                use_container_width=True
+            )
+        else:
+            st.error(f"Could not retrieve information for {fruit_chosen}")    # Optional: Show SQL for debugging
     st.code(my_insert_stmt, language="sql")
 
     # Submit button
